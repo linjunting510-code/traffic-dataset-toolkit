@@ -68,7 +68,7 @@ def frame_name(video_name: str, index: int, ext: str = "jpg") -> str:
 
 
 def build_output_pattern(out_dir: Path, video_name: str, ext: str = "jpg") -> str:
-    """ffmpeg 输出模式串,如 'out\clip001_frame_%06d.jpg'。"""
+    r"""ffmpeg 输出模式串,如 'out\clip001_frame_%06d.jpg'。"""
     return str(out_dir / f"{frame_stem(video_name)}_%0{FRAME_DIGITS}d.{ext}")
 
 
