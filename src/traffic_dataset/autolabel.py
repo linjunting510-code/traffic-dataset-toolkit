@@ -219,7 +219,7 @@ def _make_infer_fn(model_name: str, device: str, track: bool) -> Optional[Tuple[
 # ==================== 编排 ====================
 
 def autolabel(event_dir: str | Path, registry: ClassRegistry,
-              conf: float = 0.25, model: str = "yolo11n.pt",
+              conf: float = 0.2, model: str = "yolo11s.pt",
               device: str = "cpu", track: bool = False,
               infer_fn: Optional[Callable[[Path, float], List[Box]]] = None,
               coco_names: Optional[Dict[int, str]] = None) -> int:

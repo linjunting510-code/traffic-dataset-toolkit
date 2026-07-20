@@ -4,6 +4,7 @@
 子命令:
 - ``tds extract <输入> -o <目录>`` ffmpeg 视频抽帧(_frame_000001.jpg)
 - ``tds rename <folder>``      图片批量重命名为 000001.jpg 连续编号
+- ``tds subsample <事件目录> -o <新目录>`` 帧抽稀(每 N 帧取 1 帧)
 - ``tds autolabel <event_dir>`` 检测模型自动打标(ultralytics YOLO)
 - ``tds convert <event_dir>``  X-AnyLabeling JSON -> YOLO txt
 - ``tds validate <event_dir>`` 校验事件目录(配对/classes.txt/格式/统计)
@@ -117,11 +118,12 @@ def build_parser() -> argparse.ArgumentParser:
         "需要在打标环境安装 ultralytics(工具包本体不硬依赖)。",
     )
     p_auto.add_argument("event_dir", help="事件目录(内含 images/ 子目录)")
-    p_auto.add_argument("--conf", type=float, default=0.25,
-                        help="置信度阈值(默认 0.25)")
-    p_auto.add_argument("--model", default="yolo11n.pt", metavar="权重",
-                        help="ultralytics 模型权重(默认 yolo11n.pt,"
-                        "不存在时自动下载)")
+    p_auto.add_argument("--conf", type=float, default=0.2,
+                        help="置信度阈值(默认 0.2;实测比 0.25 漏检更少)")
+    p_auto.add_argument("--model", default="yolo11s.pt", metavar="权重",
+                        help="ultralytics 模型权重(默认 yolo11s.pt,"
+                        "不存在时自动下载;实测近处大车漏检、"
+                        "Bus/Truck 误分比 yolo11n 少)")
     p_auto.add_argument("--device", default="cpu",
                         help="推理设备(默认 cpu;有显卡可填 0 等)")
     p_auto.add_argument("--track", action="store_true",
@@ -129,6 +131,26 @@ def build_parser() -> argparse.ArgumentParser:
                         "固定监控机位下减少漏标抖动;track id 丢弃)")
     p_auto.add_argument("--classes", default=None, metavar="YAML",
                         help="自定义 classes.yaml 路径(同上)")
+
+    # ---- subsample ----
+    p_sub = sub.add_parser(
+        "subsample",
+        help="帧抽稀:每 N 帧取 1 帧复制到新事件目录(保留原文件名)",
+        description="固定监控机位下相邻帧近似重复,正式数据集按'每 N 帧标 1 帧'"
+        "抽稀(例子数据集 001537 即每 5 帧标 1 帧)。"
+        "读取 <事件目录>/images/ 按文件名排序选帧,复制到 <新目录>/images/"
+        "并保留原文件名(帧号可追溯回源视频);源有 labels/ 时同名 txt "
+        "与 classes.txt 一并复制(autolabel_report.txt 等元文件不复制)。",
+    )
+    p_sub.add_argument("event_dir", help="源事件目录(内含 images/ 子目录)")
+    p_sub.add_argument("-o", "--output", required=True,
+                       help="新事件目录(已存在且非空时会拒绝,除非 --force)")
+    p_sub.add_argument("--every", type=int, default=5,
+                       help="每 N 帧取 1 帧(默认 5)")
+    p_sub.add_argument("--offset", type=int, default=0,
+                       help="起始位移:0 表示取第 0,N,2N... 索引的帧(默认 0)")
+    p_sub.add_argument("--force", action="store_true",
+                       help="输出目录非空时仍然写入(同名文件会被覆盖)")
     return parser
 
 
@@ -144,6 +166,10 @@ def main(argv=None) -> int:
         from .extract import extract
         return extract(args.input, args.output, fps=args.fps,
                        frames=args.frames, ext=args.ext)
+    if args.command == "subsample":
+        from .subsample import subsample
+        return subsample(args.event_dir, args.output, every=args.every,
+                         offset=args.offset, force=args.force)
 
     # convert / validate 都需要类别定义
     try:

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "traffic-dataset-toolkit"
-version = "0.3.0"
+version = "0.4.0"
 description = "交通事件视觉数据集构建 CLI 工具:抽帧图片重命名、X-AnyLabeling JSON 转 YOLO、数据集校验"
 readme = "README.md"
 requires-python = ">=3.9"
