@@ -1,0 +1,34 @@
+# ============================================================
+# 交通事件检测数据集 —— 9 类检测类别定义(唯一权威来源)
+# 仓库里所有脚本/工具都从这里读取类别,不要在代码里硬编码类别
+# ============================================================
+
+# id -> 规范名称(YOLO class_id 从 0 开始,训练/转换/校验都以这里为准)
+classes:
+  0: Car
+  1: Bus
+  2: Truck
+  3: Motorcycle
+  4: Pedestrian
+  5: Traffic Cone
+  6: Barrier
+  7: Tree
+  8: Traffic light
+
+# 别名 -> 规范名称
+# 自动标注模型(X-AnyLabeling / YOLO 预训练模型)输出的名字五花八门,
+# 在这里统一收口。匹配时大小写不敏感。
+aliases:
+  car: Car
+  bus: Bus
+  truck: Truck
+  motorcycle: Motorcycle
+  motorbike: Motorcycle
+  person: Pedestrian
+  pedestrian: Pedestrian
+  "traffic cone": Traffic Cone
+  cone: Traffic Cone
+  barrier: Barrier
+  tree: Tree
+  "traffic light": Traffic light
+  trafficlight: Traffic light

@@ -1,0 +1,28 @@
+[build-system]
+require = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "traffic-dataset-toolkit"
+version = "0.1.0"
+description = "交通事件视觉数据集构建 CLI 工具:抽帧图片重命名、X-AnyLabeling JSON 转 YOLO、数据集校验"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+keywords = ["yolo", "dataset", "traffic", "object-detection", "x-anylabeling"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+# 唯一第三方依赖;代码内置极简 YAML 解析兜底,缺了也能跑
+dependencies = ["pyyaml>=5.4"]
+
+[project.scripts]
+tds = "traffic_dataset.cli:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]

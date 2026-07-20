@@ -1,0 +1,35 @@
+# ---- 数据与模型不入库 ----
+data/
+*.part
+
+# 视频文件
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.wmv
+*.flv
+*.ts
+*.webm
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ---- 虚拟环境 ----
+.venv/
+venv/
+
+# ---- 编辑器 / 操作系统 ----
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+desktop.ini
