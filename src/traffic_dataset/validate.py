@@ -21,6 +21,9 @@ from .rename import IMAGE_EXTS
 # 报告中逐条列出的问题上限,超过后只显示总数,避免刷屏
 _MAX_DETAIL_LINES = 20
 
+# labels/ 下不参与图片-标注配对的元文件
+_META_LABEL_FILES = {"classes.txt", "autolabel_report.txt"}
+
 
 class _Report:
     """收集 error / warning,并在最后汇总。"""
@@ -51,14 +54,15 @@ def _check_pairing(images_dir: Path, labels_dir: Path,
     image_stems = sorted(p.stem for p in images_dir.iterdir()
                          if p.is_file() and p.suffix.lower() in IMAGE_EXTS)
     label_stems = sorted(p.stem for p in labels_dir.glob("*.txt")
-                         if p.name != "classes.txt")
+                         if p.name not in _META_LABEL_FILES)
 
     image_set, label_set = set(image_stems), set(label_stems)
     missing_txt = sorted(image_set - label_set)   # 有图无标注
     orphan_txt = sorted(label_set - image_set)    # 有标注无图(孤儿)
 
     print(f"  图片: {len(image_stems)} 张 (images/)")
-    print(f"  标注: {len(label_stems)} 个 (labels/*.txt,不含 classes.txt)")
+    print(f"  标注: {len(label_stems)} 个 (labels/*.txt,"
+          f"不含 classes.txt / autolabel_report.txt)")
 
     if missing_txt:
         for stem in missing_txt:

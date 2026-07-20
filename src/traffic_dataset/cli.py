@@ -4,6 +4,7 @@
 子命令:
 - ``tds extract <输入> -o <目录>`` ffmpeg 视频抽帧(_frame_000001.jpg)
 - ``tds rename <folder>``      图片批量重命名为 000001.jpg 连续编号
+- ``tds autolabel <event_dir>`` 检测模型自动打标(ultralytics YOLO)
 - ``tds convert <event_dir>``  X-AnyLabeling JSON -> YOLO txt
 - ``tds validate <event_dir>`` 校验事件目录(配对/classes.txt/格式/统计)
 
@@ -103,6 +104,31 @@ def build_parser() -> argparse.ArgumentParser:
                       "(约能覆盖一个事件片段全过程,标注量可控)")
     p_extract.add_argument("--ext", default="jpg", choices=list(OUTPUT_EXTS),
                            help="输出图片格式(默认 jpg)")
+
+    # ---- autolabel ----
+    p_auto = sub.add_parser(
+        "autolabel",
+        help="检测模型自动打标(ultralytics YOLO,COCO 6 类映射到项目 9 类)",
+        description="对 <事件目录>/images/* 跑 ultralytics YOLO(COCO 预训练),"
+        "把 person/car/motorcycle/bus/truck/traffic light 六类检出框"
+        "映射为项目 9 类写入 labels/*.txt,并生成抽检报告"
+        "(低置信度帧/零检出帧/类别分布)。"
+        "Traffic Cone/Barrier/Tree 三类 COCO 不覆盖,需人工补标。"
+        "需要在打标环境安装 ultralytics(工具包本体不硬依赖)。",
+    )
+    p_auto.add_argument("event_dir", help="事件目录(内含 images/ 子目录)")
+    p_auto.add_argument("--conf", type=float, default=0.25,
+                        help="置信度阈值(默认 0.25)")
+    p_auto.add_argument("--model", default="yolo11n.pt", metavar="权重",
+                        help="ultralytics 模型权重(默认 yolo11n.pt,"
+                        "不存在时自动下载)")
+    p_auto.add_argument("--device", default="cpu",
+                        help="推理设备(默认 cpu;有显卡可填 0 等)")
+    p_auto.add_argument("--track", action="store_true",
+                        help="启用 ByteTrack 逐帧跟踪(persist=True,"
+                        "固定监控机位下减少漏标抖动;track id 丢弃)")
+    p_auto.add_argument("--classes", default=None, metavar="YAML",
+                        help="自定义 classes.yaml 路径(同上)")
     return parser
 
 
@@ -129,6 +155,11 @@ def main(argv=None) -> int:
     if args.command == "convert":
         from .convert import convert_event
         return convert_event(args.event_dir, registry)
+    if args.command == "autolabel":
+        from .autolabel import autolabel
+        return autolabel(args.event_dir, registry, conf=args.conf,
+                         model=args.model, device=args.device,
+                         track=args.track)
     if args.command == "validate":
         from .validate import validate_event
         return validate_event(args.event_dir, registry)

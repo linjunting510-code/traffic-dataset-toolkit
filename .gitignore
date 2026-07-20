@@ -1,6 +1,9 @@
 # ---- 数据与模型不入库 ----
 data/
 *.part
+*.pt
+*.onnx
+*.engine
 
 # 视频文件
 *.mp4
