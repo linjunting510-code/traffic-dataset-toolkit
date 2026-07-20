@@ -2,6 +2,7 @@
 """tds 命令行主入口。
 
 子命令:
+- ``tds extract <输入> -o <目录>`` ffmpeg 视频抽帧(_frame_000001.jpg)
 - ``tds rename <folder>``      图片批量重命名为 000001.jpg 连续编号
 - ``tds convert <event_dir>``  X-AnyLabeling JSON -> YOLO txt
 - ``tds validate <event_dir>`` 校验事件目录(配对/classes.txt/格式/统计)
@@ -75,6 +76,33 @@ def build_parser() -> argparse.ArgumentParser:
                             help="事件目录(内含 images/ 与 labels/ 子目录)")
     p_validate.add_argument("--classes", default=None, metavar="YAML",
                             help="自定义 classes.yaml 路径(同上)")
+
+    # ---- extract ----
+    from .extract import (DEFAULT_TARGET_FRAMES, OUTPUT_EXTS,
+                          VIDEO_EXTS)  # 仅取常量,避免顶层硬依赖
+    p_extract = sub.add_parser(
+        "extract",
+        help="ffmpeg 视频抽帧为 <视频名>_frame_000001.jpg 连续编号图片",
+        description="用 ffmpeg 把视频抽成连续编号图片帧"
+        "(命名:<视频文件名去后缀>_frame_000001.jpg,6 位编号)。"
+        "输入可以是单个视频或目录(不递归,自动跳过 .part 未完成下载文件)。"
+        "需要本机已安装 ffmpeg / ffprobe。",
+    )
+    p_extract.add_argument("input",
+                           help="视频文件,或包含视频的目录(不递归;"
+                           f"支持 {'/'.join(VIDEO_EXTS)})")
+    p_extract.add_argument("-o", "--output", required=True,
+                           help="帧图片输出目录(不存在会自动创建)")
+    mode = p_extract.add_mutually_exclusive_group()
+    mode.add_argument("--fps", type=float, default=None, metavar="N",
+                      help="固定帧率抽帧(帧/秒)")
+    mode.add_argument("--frames", type=int, default=None, metavar="M",
+                      help="目标总帧数模式:先 ffprobe 测时长,"
+                      "fps = M / 时长,实现'短视频密采、长视频稀采'。"
+                      f"与 --fps 都不给时默认 M={DEFAULT_TARGET_FRAMES}"
+                      "(约能覆盖一个事件片段全过程,标注量可控)")
+    p_extract.add_argument("--ext", default="jpg", choices=list(OUTPUT_EXTS),
+                           help="输出图片格式(默认 jpg)")
     return parser
 
 
@@ -86,6 +114,10 @@ def main(argv=None) -> int:
         from .rename import rename_folder
         return rename_folder(args.folder, dry_run=args.dry_run,
                              start=args.start, digits=args.digits)
+    if args.command == "extract":
+        from .extract import extract
+        return extract(args.input, args.output, fps=args.fps,
+                       frames=args.frames, ext=args.ext)
 
     # convert / validate 都需要类别定义
     try:

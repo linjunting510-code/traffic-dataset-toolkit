@@ -7,10 +7,11 @@
 ## 数据集流水线
 
 ```
-原始视频
-  │  抽帧(ffmpeg 等)
+原始视频(单个或整个目录)
+  │  tds extract(ffmpeg 抽帧,.part 未下载完成的自动跳过)
   ▼
-乱名图片文件夹 ── tds rename ──► 000001.jpg 起的连续编号(保帧序)
+<视频名>_frame_000001.jpg 连续帧图片
+  │  (需要改成 000001.jpg 风格时)tds rename ──► 000001.jpg 起的连续编号(保帧序)
   │  X-AnyLabeling 自动标注(每张图生成同名 .json)
   ▼
 images/*.json ── tds convert ──► labels/*.txt(YOLO 格式)+ classes.txt
@@ -64,6 +65,25 @@ export PYTHONPATH=src
 
 ## 使用
 
+### tds extract —— 视频抽帧(ffmpeg)
+
+```bash
+# 目标总帧数模式(默认):按视频时长自动算帧率,短视频密采、长视频稀采
+tds extract "D:\dataset_work\raw_videos\clip001.mp4" -o "D:\dataset_work\frames"
+
+# 整个目录批量(不递归,自动跳过 .part 未完成下载文件)
+tds extract "D:\dataset_work\raw_videos" -o "D:\dataset_work\frames" --frames 120
+
+# 固定帧率模式
+tds extract "D:\dataset_work\raw_videos" -o "D:\dataset_work\frames" --fps 2
+```
+
+- 输出命名:`<视频文件名去后缀>_frame_000001.jpg`(6 位连续编号)
+- 两种采样模式互斥:`--fps N` 固定帧率;`--frames M` 目标总帧数(ffprobe 测时长,`fps = M / 时长`)。都不给时默认 `--frames 120`——约能覆盖一个事件片段全过程,标注量可控
+- 抽帧前打印计划(每个视频的时长/采用 fps/预计帧数),抽完打印统计
+- 输出目录已有同名帧时跳过该视频,避免覆盖重抽
+- 需要本机安装 ffmpeg / ffprobe:`winget install ffmpeg` 或[官网](https://ffmpeg.org/download.html)
+
 ### tds rename —— 图片批量重命名
 
 ```bash
@@ -106,8 +126,9 @@ tds validate "D:\dataset_work\Traffic incidents\2"
 traffic-dataset-toolkit/
 ├── configs/classes.yaml   # 9 类唯一定义(id→名称 + 别名)
 ├── src/traffic_dataset/
-│   ├── cli.py             # argparse 入口:tds rename/convert/validate
+│   ├── cli.py             # argparse 入口:tds extract/rename/convert/validate
 │   ├── classes.py         # 类别加载与解析(带 YAML 极简兜底)
+│   ├── extract.py         # ffmpeg 视频抽帧
 │   ├── rename.py          # 图片重命名
 │   ├── convert.py         # JSON -> YOLO
 │   └── validate.py        # 数据集校验
